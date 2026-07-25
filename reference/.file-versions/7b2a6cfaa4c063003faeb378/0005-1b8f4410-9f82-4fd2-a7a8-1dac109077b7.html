@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lobbybee Hotel — Check-in</title>
+<style>
+  :root{
+    --bg:#FBF5EC;
+    --surface:#FFFFFF;
+    --surface-2:#FFF9EE;
+    --fg:#2B2420;
+    --muted:#6E6357;
+    --border:#EEE5D6;
+    --accent:#FECB14;
+    --accent-soft:#FFE8A0;
+    --accent-ink:#3E3000;
+    --danger:#E5484D;
+    --danger-soft:#FDECEC;
+    --ok:#2FA36B;
+    --wa:#25D366;
+    --radius:22px;
+    --shadow:0 10px 30px rgba(78,59,0,.10), 0 2px 8px rgba(78,59,0,.05);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 100% 0%, #FFE9AE 0%, rgba(255,233,174,0) 55%),
+      radial-gradient(120% 90% at 0% 100%, #FDE4C4 0%, rgba(253,228,196,0) 50%),
+      var(--bg);
+    color:var(--fg);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100dvh;padding:24px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- device ---------- */
+  .phone{
+    width:100%;max-width:404px;height:min(872px,calc(100dvh - 48px));
+    background:var(--surface);border-radius:44px;
+    box-shadow:0 40px 80px rgba(60,45,10,.22), 0 0 0 10px #1c1a17, 0 0 0 11px #33302b;
+    overflow:hidden;position:relative;display:flex;flex-direction:column;
+  }
+  .statusbar{
+    height:52px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+    padding:0 28px;font-size:15px;font-weight:600;letter-spacing:.2px;
+    position:relative;z-index:5;
+  }
+  .statusbar .dots{display:flex;gap:5px;align-items:center}
+  .statusbar .dots svg{opacity:.85}
+
+  /* ---------- progress ---------- */
+  .progress{display:flex;gap:6px;padding:4px 24px 12px;flex:0 0 auto}
+  .progress .seg{height:5px;flex:1;border-radius:99px;background:var(--border);transition:background .35s ease}
+  .progress .seg.done{background:var(--accent)}
+  .progress .seg.active{background:linear-gradient(90deg,var(--accent),var(--accent-soft))}
+
+  /* ---------- scroll area ---------- */
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:0 20px 8px}
+  .scroll::-webkit-scrollbar{width:0}
+  .step{display:none;animation:fade .4s ease both}
+  .step.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    margin:2px -20px 18px;padding:26px 24px 30px;
+    background:linear-gradient(160deg,#FFE9A6 0%,#FECB14 100%);
+    border-radius:0 0 30px 30px;position:relative;overflow:hidden;text-align:center;
+  }
+  .hero:after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 20% 0%,rgba(255,255,255,.5),transparent 60%)}
+  .hero .bee{position:relative;width:74px;height:74px;margin:2px auto 12px;display:block;
+    filter:drop-shadow(0 6px 12px rgba(120,80,0,.25))}
+  .hero .welcome{position:relative;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);opacity:.8;margin-bottom:6px}
+  .hero h1{position:relative;margin:0;font-size:29px;line-height:1.12;font-weight:800;letter-spacing:-.02em;color:#2A2000}
+  .hero p{position:relative;margin:10px auto 0;max-width:280px;font-size:15px;line-height:1.45;color:#6A5410;font-weight:500}
+
+  h2.title{font-size:23px;font-weight:800;letter-spacing:-.02em;margin:6px 0 4px}
+  p.sub{font-size:14.5px;color:var(--muted);line-height:1.45;margin:0 0 18px}
+
+  .card-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.07em;color:var(--fg);margin:22px 4px 10px;text-transform:uppercase}
+  .card-label .req{color:var(--danger);font-weight:800}
+  .hint{font-size:12.5px;color:var(--muted);margin:8px 4px 0;display:flex;gap:6px;align-items:flex-start;line-height:1.4}
+
+  /* ---------- upload tiles ---------- */
+  .uploads{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .tile{
+    position:relative;aspect-ratio:1.55/1;border-radius:18px;border:2px dashed var(--border);
+    background:var(--surface-2);cursor:pointer;overflow:hidden;transition:.22s;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:10px;
+  }
+  .tile:active{transform:scale(.98)}
+  .tile .ic{width:30px;height:30px;color:var(--accent-ink);opacity:.75}
+  .tile .cap{font-size:13px;font-weight:600;color:var(--fg)}
+  .tile .cap small{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:2px}
+  .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+  .tile .remove{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(20,16,10,.6);
+    backdrop-filter:blur(6px);border:0;display:none;align-items:center;justify-content:center;cursor:pointer}
+  .tile .remove svg{width:13px;height:13px;color:#fff}
+  /* filled */
+  .tile.filled{border-style:solid;border-color:var(--ok)}
+  .tile.filled img{display:block}
+  .tile.filled .ic,.tile.filled .cap{display:none}
+  .tile.filled .remove{display:flex}
+  .tile.filled .badge{position:absolute;left:8px;bottom:8px;background:rgba(20,16,10,.62);backdrop-filter:blur(6px);
+    color:#fff;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;display:flex;align-items:center;gap:4px}
+  .tile.filled .badge svg{width:12px;height:12px;color:#7CF0AE}
+  .tile .badge{display:none}
+  .tile.filled .badge{display:flex}
+  /* error */
+  .tile.err{border-color:var(--danger);background:var(--danger-soft);animation:shake .4s}
+  .tile.err .ic{color:var(--danger);opacity:1}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .err-msg{display:none;color:var(--danger);font-size:12.5px;font-weight:600;margin:9px 4px 0;align-items:center;gap:6px}
+  .err-msg.show{display:flex}
+
+  /* ---------- guest stepper ---------- */
+  .stepper-row{display:flex;align-items:center;justify-content:space-between;gap:14px;
+    background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-top:4px;box-shadow:var(--shadow)}
+  .stepper-row .txt strong{display:block;font-size:15.5px;font-weight:700}
+  .stepper-row .txt span{font-size:12.5px;color:var(--muted)}
+  .stepper{display:flex;align-items:center;gap:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:4px}
+  .stepper button{width:38px;height:38px;border:0;background:var(--surface);border-radius:11px;font-size:22px;font-weight:500;
+    color:var(--accent-ink);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(60,45,10,.12);transition:.15s}
+  .stepper button:active{transform:scale(.9)}
+  .stepper button:disabled{opacity:.35;box-shadow:none;cursor:not-allowed}
+  .stepper .val{min-width:34px;text-align:center;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+
+  /* ---------- guest card (step 2) ---------- */
+  .guest-card{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:18px 16px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .guest-card .gc-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .guest-card .avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(160deg,var(--accent-soft),var(--accent));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent-ink);font-size:16px;flex:0 0 auto}
+  .guest-card .gc-head strong{font-size:16px;font-weight:800}
+  .guest-card .gc-head span{font-size:12.5px;color:var(--muted);display:block}
+  .guest-card .card-label{margin-top:14px}
+
+  /* ---------- footer action ---------- */
+  .footer{flex:0 0 auto;padding:14px 20px calc(20px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(255,255,255,0),var(--surface) 30%);}
+  .btn{width:100%;height:54px;border:0;border-radius:16px;font:inherit;font-size:16.5px;font-weight:700;letter-spacing:.01em;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:.18s}
+  .btn:active{transform:scale(.985)}
+  .btn-primary{background:linear-gradient(135deg,#FFD84A,#FECB14);color:var(--accent-ink);
+    box-shadow:0 8px 22px rgba(254,203,20,.45)}
+  .btn-primary:active{box-shadow:0 4px 12px rgba(254,203,20,.4)}
+  .btn-wa{background:var(--wa);color:#fff;box-shadow:0 8px 22px rgba(37,211,102,.4)}
+  .btn-ghost{background:transparent;color:var(--muted);height:44px;font-size:15px;font-weight:600;box-shadow:none;margin-top:2px}
+  .footer .stack{display:flex;flex-direction:column}
+
+  /* ---------- step 3 success/loading ---------- */
+  .final{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    min-height:100%;padding:30px 26px}
+  .spinner{width:76px;height:76px;border-radius:50%;border:6px solid var(--accent-soft);border-top-color:var(--accent);
+    animation:spin 1s linear infinite;margin-bottom:26px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .final h2{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px}
+  .final p{font-size:15px;color:var(--muted);line-height:1.5;margin:0;max-width:270px}
+  .success-mark{width:104px;height:104px;border-radius:50%;background:linear-gradient(160deg,#4FD48A,#2FA36B);
+    display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 14px 34px rgba(47,163,107,.4);
+    animation:pop .5s cubic-bezier(.2,1.3,.4,1) both}
+  .success-mark svg{width:52px;height:52px;color:#fff}
+  @keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+  .keychip{margin-top:22px;display:inline-flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:16px;padding:12px 18px;font-size:13.5px;color:var(--fg);font-weight:600}
+  .keychip svg{width:18px;height:18px;color:var(--accent-ink)}
+
+  /* ---------- focus / hover / motion ---------- */
+  .sr-file{position:absolute;top:0;left:0;width:1px;height:1px;opacity:0}
+  :focus-visible{outline:none}
+  .btn:focus-visible,.stepper button:focus-visible,.remove:focus-visible,.tile:focus-within{
+    outline:3px solid var(--accent-ink);outline-offset:2px}
+  @media (hover:hover){
+    .btn-primary:hover{filter:brightness(1.05)}
+    .btn-wa:hover{filter:brightness(1.06)}
+    .btn-ghost:hover{color:var(--fg)}
+    .tile:hover{border-color:var(--accent);background:#FFFDF5}
+    .tile.filled:hover{border-color:var(--ok)}
+    .stepper button:hover:not(:disabled){background:var(--accent-soft)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  }
+
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="phone" data-od-id="checkin-app">
+
+  <!-- iOS status bar -->
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="dots">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1.5" width="3" height="10.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity=".35"/></svg>
+      <svg width="22" height="12" viewBox="0 0 24 12" fill="none" stroke="currentColor"><rect x="1" y="1" width="20" height="10" rx="3" stroke-width="1.2" opacity=".5"/><rect x="2.5" y="2.5" width="15" height="7" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="1.5" height="4" rx="1" fill="currentColor" opacity=".5"/></svg>
+    </span>
+  </div>
+
+  <!-- progress -->
+  <div class="progress" data-od-id="progress">
+    <div class="seg active" data-seg="1"></div>
+    <div class="seg" data-seg="2"></div>
+    <div class="seg" data-seg="3"></div>
+  </div>
+
+  <div class="scroll" id="scroll">
+
+    <!-- ========== STEP 1 ========== -->
+    <section class="step on" data-step="1" data-od-id="step-welcome">
+      <div class="hero">
+        <svg class="bee" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="50" cy="62" rx="26" ry="30" fill="#3E3000"/>
+          <path d="M27 50h46M25 62h50M28 74h44" stroke="#FFD84A" stroke-width="8" stroke-linecap="round"/>
+          <path d="M34 40C20 22 40 20 46 34" fill="#FFF7DA" stroke="#3E3000" stroke-width="3" stroke-linejoin="round" opacity=".95"/>
+          <path d="M66 40C80 22 60 20 54 34" fill="#FFF7DA" stroke="#3E3000" stroke-width="3" stroke-linejoin="round" opacity=".95"/>
+          <circle cx="50" cy="34" r="15" fill="#3E3000"/>
+          <circle cx="44" cy="33" r="3.4" fill="#fff"/><circle cx="56" cy="33" r="3.4" fill="#fff"/>
+          <path d="M43 41q7 5 14 0" stroke="#FFD84A" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+          <path d="M43 21l-5-7M57 21l5-7" stroke="#3E3000" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="38" cy="14" r="3" fill="#FFD84A"/><circle cx="62" cy="14" r="3" fill="#FFD84A"/>
+        </svg>
+        <div class="welcome">Welcome to</div>
+        <h1>Lobbybee Hotel</h1>
+        <p>Let's start your journey — a quick, contactless check-in in under a minute.</p>
+      </div>
+
+      <h2 class="title" style="margin-top:14px">Primary guest ID <span class="req" style="color:var(--danger)">*</span></h2>
+
+      <div class="uploads" id="primary-uploads" data-od-id="primary-uploads">
+        <!-- tiles injected -->
+      </div>
+      <div class="err-msg" id="err-primary" role="alert"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5" stroke-linecap="round"/></svg><span>Please add both the front and back of your ID.</span></div>
+      <p class="hint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 auto;margin-top:1px;color:var(--muted)"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z"/><path d="M9 20h6M10 22h4" stroke-linecap="round"/></svg><span><b style="color:var(--fg)">Recommended:</b> Aadhaar, Driving Licence or Passport. Keep all four corners in frame.</span></p>
+
+      <div class="card-label" style="margin-top:26px">Traveling companions</div>
+      <div class="stepper-row" data-od-id="guest-stepper">
+        <div class="txt"><strong>Additional guests</strong><span>Add each companion's ID next</span></div>
+        <div class="stepper">
+          <button id="g-minus" onclick="changeGuests(-1)" aria-label="Remove guest" disabled>−</button>
+          <div class="val" id="guest-count" aria-live="polite">0</div>
+          <button id="g-plus" onclick="changeGuests(1)" aria-label="Add guest">+</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== STEP 2 ========== -->
+    <section class="step" data-step="2" data-od-id="step-guests">
+      <h2 class="title" style="margin-top:8px">Additional guest IDs</h2>
+      <p class="sub" id="guest-sub">Add a photo ID for each companion traveling with you.</p>
+      <div id="guest-list"><!-- guest cards injected --></div>
+    </section>
+
+    <!-- ========== STEP 3 ========== -->
+    <section class="step" data-step="3" data-od-id="step-success">
+      <div class="final" id="final-loading" role="status" aria-live="polite">
+        <div class="spinner"></div>
+        <h2>Checking you in…</h2>
+        <p>Verifying documents and preparing your room. This only takes a moment.</p>
+      </div>
+
+      <div class="final hidden" id="final-success" role="status" aria-live="polite">
+        <div class="success-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2>You're all checked in!</h2>
+        <p>Welcome to Lobbybee Hotel. Your digital key is ready and our concierge is standing by on WhatsApp.</p>
+        <div class="keychip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8 2 2-2 2 2 2-2 2-3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Room 214 · Digital key active
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- footer action -->
+  <div class="footer" id="footer">
+    <div class="stack" id="footer-inner">
+      <button class="btn btn-primary" id="primary-btn" onclick="advance()">Start check-in</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---------- state ----------
+  var step = 1;
+  var guestCount = 0;            // additional guests
+  // ---------- upload tile builder ----------
+  // returns a DOM node for one front/back pair
+  function buildTile(id, label, sub){
+    var wrap = document.createElement('label');
+    wrap.className = 'tile';
+    wrap.dataset.tile = id;
+    wrap.setAttribute('data-od-id', 'tile-' + id);
+    wrap.innerHTML =
+      '<input type="file" accept="image/*" capture="environment" class="sr-file" aria-label="' + label + ' of ID document">' +
+      '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8l1.5-2.5A2 2 0 0 1 7.2 4.5h9.6a2 2 0 0 1 1.7 1L20 8" stroke-linecap="round"/><rect x="2.5" y="7.5" width="19" height="12" rx="3"/><circle cx="12" cy="13.5" r="3.4"/></svg>' +
+      '<div class="cap">' + label + '<small>' + sub + '</small></div>' +
+      '<img alt="">' +
+      '<button type="button" class="remove" aria-label="Remove photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>' +
+      '<span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>' + label + '</span>';
+
+    var input = wrap.querySelector('input');
+    var img = wrap.querySelector('img');
+    var remove = wrap.querySelector('.remove');
+
+    input.addEventListener('change', function(){
+      var f = input.files && input.files[0];
+      if(!f) return;
+      var url = URL.createObjectURL(f);
+      img.src = url;
+      wrap.classList.add('filled');
+      wrap.classList.remove('err');
+      clearErrorFor(wrap);
+    });
+    remove.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      input.value = '';
+      img.removeAttribute('src');
+      wrap.classList.remove('filled');
+    });
+    return wrap;
+  }
+
+  function clearErrorFor(tile){
+    // hide the sibling error message once both tiles in the group are filled
+    var group = tile.closest('.uploads');
+    if(!group) return;
+    var missing = group.querySelectorAll('.tile:not(.filled)').length;
+    if(missing === 0){
+      var em = group.parentElement.querySelector('.err-msg') || document.getElementById('err-primary');
+      if(group.id === 'primary-uploads' && document.getElementById('err-primary'))
+        document.getElementById('err-primary').classList.remove('show');
+      var localErr = group.nextElementSibling;
+      if(localErr && localErr.classList.contains('err-msg')) localErr.classList.remove('show');
+    }
+  }
+
+  // build primary tiles
+  (function(){
+    var host = document.getElementById('primary-uploads');
+    host.appendChild(buildTile('primary-front','Front','Photo side'));
+    host.appendChild(buildTile('primary-back','Back','Details side'));
+  })();
+
+  // ---------- guest stepper ----------
+  function changeGuests(d){
+    guestCount = Math.max(0, Math.min(6, guestCount + d));
+    document.getElementById('guest-count').textContent = guestCount;
+    document.getElementById('g-minus').disabled = guestCount === 0;
+    document.getElementById('g-plus').disabled = guestCount === 6;
+  }
+
+  // ---------- build guest cards for step 2 ----------
+  function buildGuestCards(){
+    var list = document.getElementById('guest-list');
+    list.innerHTML = '';
+    document.getElementById('guest-sub').textContent =
+      guestCount === 1 ? 'Add a photo ID for your 1 companion.'
+                       : 'Add a photo ID for each of your ' + guestCount + ' companions.';
+    for(var i = 1; i <= guestCount; i++){
+      var card = document.createElement('div');
+      card.className = 'guest-card';
+      card.setAttribute('data-od-id', 'guest-' + i);
+      card.innerHTML =
+        '<div class="gc-head"><div class="avatar">' + (i+1) + '</div>' +
+        '<div><strong>Guest ' + (i+1) + '</strong><span>Companion ID document</span></div></div>' +
+        '<div class="card-label">ID photos <span class="req">*</span></div>' +
+        '<div class="uploads"></div>' +
+        '<div class="err-msg" role="alert"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5" stroke-linecap="round"/></svg><span>Add the front and back for Guest ' + (i+1) + '.</span></div>';
+      var up = card.querySelector('.uploads');
+      up.appendChild(buildTile('g' + i + '-front','Front','Photo side'));
+      up.appendChild(buildTile('g' + i + '-back','Back','Details side'));
+      list.appendChild(card);
+    }
+  }
+
+  // ---------- validation ----------
+  function validateGroup(uploadsEl, errEl){
+    var tiles = uploadsEl.querySelectorAll('.tile');
+    var ok = true;
+    tiles.forEach(function(t){
+      if(!t.classList.contains('filled')){ t.classList.add('err'); ok = false; }
+    });
+    if(errEl) errEl.classList.toggle('show', !ok);
+    return ok;
+  }
+
+  function validateStep1(){
+    return validateGroup(document.getElementById('primary-uploads'), document.getElementById('err-primary'));
+  }
+  function validateStep2(){
+    var ok = true;
+    document.querySelectorAll('#guest-list .guest-card').forEach(function(card){
+      if(!validateGroup(card.querySelector('.uploads'), card.querySelector('.err-msg'))) ok = false;
+    });
+    return ok;
+  }
+
+  // ---------- navigation ----------
+  function showStep(n){
+    step = n;
+    document.querySelectorAll('.step').forEach(function(s){
+      s.classList.toggle('on', +s.dataset.step === n);
+    });
+    document.querySelectorAll('.progress .seg').forEach(function(seg){
+      var i = +seg.dataset.seg;
+      seg.classList.toggle('done', i < n);
+      seg.classList.toggle('active', i === n);
+    });
+    document.getElementById('scroll').scrollTop = 0;
+    renderFooter();
+  }
+
+  function renderFooter(){
+    var inner = document.getElementById('footer-inner');
+    if(step === 1){
+      inner.innerHTML = '<button class="btn btn-primary" onclick="advance()">Continue</button>';
+    } else if(step === 2){
+      inner.innerHTML =
+        '<button class="btn btn-primary" onclick="advance()">Check me in</button>' +
+        '<button class="btn btn-ghost" onclick="showStep(1)">Back</button>';
+    } else {
+      document.getElementById('footer').classList.add('hidden'); // hidden during loading
+    }
+  }
+
+  function advance(){
+    if(step === 1){
+      if(!validateStep1()) return;
+      if(guestCount > 0){ buildGuestCards(); showStep(2); }
+      else { runCheckin(); }
+    } else if(step === 2){
+      if(!validateStep2()) return;
+      runCheckin();
+    }
+  }
+
+  function runCheckin(){
+    showStep(3);
+    document.getElementById('footer').classList.add('hidden');
+    document.getElementById('final-loading').classList.remove('hidden');
+    document.getElementById('final-success').classList.add('hidden');
+    setTimeout(function(){
+      document.getElementById('final-loading').classList.add('hidden');
+      document.getElementById('final-success').classList.remove('hidden');
+      var f = document.getElementById('footer');
+      f.classList.remove('hidden');
+      f.querySelector('#footer-inner').innerHTML =
+        '<a class="btn btn-wa" href="https://wa.me/?text=' + encodeURIComponent("Hi Lobbybee concierge, I've just checked in!") + '" target="_blank" rel="noopener">' +
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.09c-.24.68-1.4 1.3-1.94 1.35-.5.05-1.13.07-1.82-.11-.42-.11-.96-.29-1.65-.59-2.9-1.25-4.79-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-2.99 0-1.42.75-2.12 1.01-2.41.26-.29.57-.36.76-.36.19 0 .38 0 .55.01.18.01.41-.07.65.5.24.58.82 2 .89 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.28-.12.55.16.29.72 1.18 1.54 1.91 1.06.94 1.96 1.24 2.24 1.38.28.14.44.12.6-.07.16-.19.69-.8.87-1.08.18-.29.36-.24.6-.14.24.09 1.54.72 1.8.86.26.14.44.21.5.31.07.11.07.62-.17 1.3Z"/></svg>' +
+        'Continue to experience</a>';
+    }, 2600);
+  }
+
+  // init
+  renderFooter();
+</script>
+</body>
+</html>
