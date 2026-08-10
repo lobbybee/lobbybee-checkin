@@ -17,11 +17,11 @@ const inputId = useId()
 const message = computed(() => props.state.error || (props.state.missing ? props.missingMsg : ''))
 const bad = computed(() => !!props.state.error || props.state.missing)
 
-function onChange(e: Event) {
+async function onChange(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0] ?? null
-  assignFile(props.state, file)
   input.value = '' // allow re-selecting the same file after a removal
+  await assignFile(props.state, file)
 }
 
 function onRemove(e: Event) {
@@ -42,11 +42,17 @@ function onRemove(e: Event) {
         :id="inputId"
         type="file"
         accept="image/*"
-        capture="environment"
         class="sr-file"
+        :disabled="state.busy"
         :aria-label="`${label} of ID document`"
         @change="onChange"
       >
+      <div v-if="state.busy" class="busy">
+        <div class="spinner" />
+        <div class="cap">
+          Compressing…
+        </div>
+      </div>
       <svg v-if="!state.url" class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M4 8l1.5-2.5A2 2 0 0 1 7.2 4.5h9.6a2 2 0 0 1 1.7 1L20 8" stroke-linecap="round" />
         <rect x="2.5" y="7.5" width="19" height="12" rx="3" />
@@ -121,6 +127,34 @@ function onRemove(e: Event) {
   font-weight: 500;
   color: var(--muted);
   margin-top: 2px;
+}
+
+/* Covers the preview/prompt while the picked image is re-encoded. */
+.tile .busy {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.tile .spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  animation: tile-spin .8s linear infinite;
+}
+
+@keyframes tile-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tile img {

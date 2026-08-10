@@ -11,6 +11,7 @@ import {
 
 // API rejects images > 5 MB (413); we pre-check to avoid the round-trip.
 const MAX_BYTES = 5 * 1024 * 1024
+const MAX_EDGE = 1600 // ponytail: fixed cap; make it a prop if some doc type needs more detail
 const MAX_GUESTS = 6
 
 /** A single upload tile's state (client preview + upload tracking). */
@@ -21,9 +22,12 @@ export interface FileSlot {
   missing: boolean
   /** True once this exact file has been POSTed to the server. */
   uploaded: boolean
+  /** True while the picked image is being re-encoded. */
+  busy: boolean
 }
 
-const newSlot = (): FileSlot => reactive({ file: null, url: null, error: null, missing: false, uploaded: false })
+const newSlot = (): FileSlot =>
+  reactive({ file: null, url: null, error: null, missing: false, uploaded: false, busy: false })
 
 /** Drop empty-string keys so PATCH only sends fields the user actually provided. */
 function pruneEmpty<T extends Record<string, string>>(obj: T): Partial<T> {
@@ -34,12 +38,39 @@ function pruneEmpty<T extends Record<string, string>>(obj: T): Partial<T> {
   return out
 }
 
-/** Put a file into a slot, validating type + size. Resets its uploaded flag. */
-export function assignFile(slot: FileSlot, file: File | null): boolean {
+/**
+ * Re-encode to WebP at max 1600px on the long edge, so phone photos (often 5–10 MB)
+ * clear the 5 MB API limit. Falls back to the original on any decode/encode failure.
+ */
+async function compress(file: File): Promise<File> {
+  try {
+    const bmp = await createImageBitmap(file)
+    const scale = Math.min(1, MAX_EDGE / Math.max(bmp.width, bmp.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bmp.width * scale)
+    canvas.height = Math.round(bmp.height * scale)
+    canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height)
+    bmp.close()
+    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/webp', 0.82))
+    if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' })
+  } catch {
+    return file
+  }
+}
+
+/** Put a file into a slot, validating type, compressing, then checking size. Resets its uploaded flag. */
+export async function assignFile(slot: FileSlot, file: File | null): Promise<boolean> {
   if (!file) return false
   if (file.type.indexOf('image/') !== 0) {
     slot.error = "That file isn't an image — please upload a photo."
     return false
+  }
+  slot.busy = true
+  try {
+    file = await compress(file)
+  } finally {
+    slot.busy = false
   }
   if (file.size > MAX_BYTES) {
     slot.error = 'Image is over 5 MB — please use a smaller photo.'
