@@ -76,11 +76,17 @@ function onRemove(e: Event) {
         {{ label }}<small>{{ sub }}</small>
       </div>
       <div v-if="!state.url" class="picks">
-        <button type="button" class="pick" :disabled="state.busy" @click.stop.prevent="cameraEl?.click()">
-          Camera
+        <button type="button" class="pick" :disabled="state.busy" aria-label="Take a photo" @click.stop.prevent="cameraEl?.click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 8l1.5-2.5A2 2 0 0 1 7.2 4.5h9.6a2 2 0 0 1 1.7 1L20 8" stroke-linecap="round" />
+            <rect x="2.5" y="7.5" width="19" height="12" rx="3" />
+            <circle cx="12" cy="13.5" r="3.4" />
+          </svg>
         </button>
-        <button type="button" class="pick" :disabled="state.busy" @click.stop.prevent="galleryEl?.click()">
-          Files
+        <button type="button" class="pick" :disabled="state.busy" aria-label="Choose a file" @click.stop.prevent="galleryEl?.click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7.5a2 2 0 0 1 2-2h3.6l2 2.4H19a2 2 0 0 1 2 2v7.6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" stroke-linejoin="round" />
+          </svg>
         </button>
       </div>
 
@@ -283,17 +289,29 @@ function onRemove(e: Event) {
   .picks {
     display: flex;
   }
+
+  /* The chips carry the camera glyph now — the big one would just repeat it. */
+  .tile .ic {
+    display: none;
+  }
 }
 
 .pick {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--fg);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 99px;
+  color: var(--accent-ink);
+  border-radius: 50%;
   cursor: pointer;
+}
+
+.pick svg {
+  width: 19px;
+  height: 19px;
 }
 
 .pick:active {
