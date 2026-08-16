@@ -230,7 +230,7 @@ const bad = (value: string) => showErrors.value && !value.trim()
   background: var(--surface-2);
   padding: 0 14px;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px; /* <16px makes iOS Safari zoom the whole page on focus */
   font-weight: 500;
   color: var(--fg);
   transition: border-color .15s, box-shadow .15s, background .15s;

@@ -15,6 +15,7 @@
   --radius: 22px;
   --shadow: 0 10px 30px rgba(78, 59, 0, .10), 0 2px 8px rgba(78, 59, 0, .05);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
 }
 
 * {
@@ -28,7 +29,14 @@ body {
   height: 100%;
 }
 
+html {
+  /* Stops iOS/Android from inflating text in landscape, which breaks the fixed-px scale. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
+  overscroll-behavior-y: none;
   background:
     radial-gradient(120% 80% at 100% 0%, #FFE9AE 0%, rgba(255, 233, 174, 0) 55%),
     radial-gradient(120% 90% at 0% 100%, #FDE4C4 0%, rgba(253, 228, 196, 0) 50%),
@@ -38,16 +46,30 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* App viewport — fills the full screen width (mobile-first). */
+/* App viewport — fills the screen (mobile-first), capped and centred on bigger screens.
+   Fixed height (not min-height) so the inner .scroll owns scrolling instead of the body. */
 .app {
   width: 100%;
-  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100vh;
+  height: 100dvh;
   background: var(--surface);
   overflow: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top);
+}
+
+/* Tablet / desktop: float the phone-width shell on the page background. */
+@media (min-width: 540px) and (min-height: 640px) {
+  .app {
+    height: min(100dvh, 900px);
+    margin: max(0px, calc((100dvh - 900px) / 2)) auto;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
 }
 
 /* ---------- shared building blocks ---------- */

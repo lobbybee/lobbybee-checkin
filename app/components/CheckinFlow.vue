@@ -79,6 +79,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="app">
+    <a class="wa-back" :href="waHref" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      Back to WhatsApp
+    </a>
+
     <!-- progress -->
     <div class="progress">
       <div
@@ -129,6 +134,21 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.wa-back {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px; /* .app already pads the top safe area */
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .progress {
   display: flex;
   gap: 6px;
@@ -154,6 +174,7 @@ onBeforeUnmount(() => {
 
 .scroll {
   flex: 1 1 auto;
+  min-height: 0; /* without this a flex child refuses to shrink and the footer gets pushed off */
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

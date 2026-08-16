@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, useId, useTemplateRef } from 'vue'
 import { assignFile, clearSlot, type FileSlot } from '~/composables/useCheckin'
 
 const props = defineProps<{
@@ -13,6 +13,8 @@ const props = defineProps<{
 }>()
 
 const inputId = useId()
+const galleryEl = useTemplateRef<HTMLInputElement>('gallery')
+const cameraEl = useTemplateRef<HTMLInputElement>('camera')
 
 const message = computed(() => props.state.error || (props.state.missing ? props.missingMsg : ''))
 const bad = computed(() => !!props.state.error || props.state.missing)
@@ -40,11 +42,23 @@ function onRemove(e: Event) {
     >
       <input
         :id="inputId"
+        ref="gallery"
         type="file"
         accept="image/*"
         class="sr-file"
         :disabled="state.busy"
         :aria-label="`${label} of ID document`"
+        @change="onChange"
+      >
+      <!-- Touch devices get an explicit camera path; desktop has no camera, so it stays hidden. -->
+      <input
+        ref="camera"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        class="sr-file"
+        :disabled="state.busy"
+        :aria-label="`Take a photo of the ${label.toLowerCase()} of ID document`"
         @change="onChange"
       >
       <div v-if="state.busy" class="busy">
@@ -60,6 +74,14 @@ function onRemove(e: Event) {
       </svg>
       <div v-if="!state.url" class="cap">
         {{ label }}<small>{{ sub }}</small>
+      </div>
+      <div v-if="!state.url" class="picks">
+        <button type="button" class="pick" :disabled="state.busy" @click.stop.prevent="cameraEl?.click()">
+          Camera
+        </button>
+        <button type="button" class="pick" :disabled="state.busy" @click.stop.prevent="galleryEl?.click()">
+          Files
+        </button>
       </div>
 
       <img v-if="state.url" :src="state.url" alt="">
@@ -249,6 +271,33 @@ function onRemove(e: Event) {
   margin: 9px 4px 0;
   align-items: center;
   gap: 6px;
+}
+
+.picks {
+  display: none;
+  gap: 8px;
+}
+
+/* Touch-only: a phone has a camera, a desktop label-tap already opens the file dialog. */
+@media (pointer: coarse) {
+  .picks {
+    display: flex;
+  }
+}
+
+.pick {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 99px;
+  cursor: pointer;
+}
+
+.pick:active {
+  background: var(--accent-soft);
 }
 
 .sr-file {
